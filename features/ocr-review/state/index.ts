@@ -8,6 +8,7 @@ export {
   selectDuplicateGroups,
   selectLowConfidenceCandidateIds,
   selectSelectedCandidates,
+  selectSelectedUnresolvedDuplicateGroups,
   selectUnresolvedDuplicateGroups,
   type CandidateValidation,
   type DuplicateGroup,
