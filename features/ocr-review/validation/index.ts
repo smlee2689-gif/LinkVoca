@@ -48,4 +48,3 @@ export function validateWordInput(
 
   return { isValid: true, normalizedText };
 }
-

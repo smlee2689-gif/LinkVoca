@@ -48,4 +48,3 @@ export type OcrReviewState = Readonly<{
   job: OcrJob;
   candidates: readonly OcrReviewCandidate[];
 }>;
-

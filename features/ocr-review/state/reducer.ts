@@ -27,9 +27,17 @@ function updateCandidate(
   candidateId: string,
   update: (candidate: OcrReviewCandidate) => OcrReviewCandidate,
 ): readonly OcrReviewCandidate[] {
-  return candidates.map((candidate) =>
-    candidate.id === candidateId ? update(candidate) : candidate,
-  );
+  let hasUpdatedCandidate = false;
+
+  return candidates.map((candidate) => {
+    if (hasUpdatedCandidate || candidate.id !== candidateId) return candidate;
+
+    hasUpdatedCandidate = true;
+    const updatedCandidate = update(candidate);
+    return updatedCandidate.isExcluded
+      ? { ...updatedCandidate, isSelected: false }
+      : updatedCandidate;
+  });
 }
 
 export function ocrReviewReducer(
@@ -78,9 +86,14 @@ export function ocrReviewReducer(
         candidates: updateCandidate(state.candidates, action.candidateId, (candidate) => ({
           ...candidate,
           isExcluded: false,
+          isSelected: false,
         })),
       };
     case 'candidate/add-manual': {
+      if (state.candidates.some((candidate) => candidate.id === action.candidateId)) {
+        return state;
+      }
+
       const nextSortOrder = state.candidates.reduce(
         (maximum, candidate) => Math.max(maximum, candidate.sortOrder),
         -1,
@@ -120,4 +133,3 @@ export function ocrReviewReducer(
       };
   }
 }
-

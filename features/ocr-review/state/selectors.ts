@@ -37,16 +37,28 @@ export function selectSelectedCandidates(
 export function selectCandidateValidations(
   state: OcrReviewState,
 ): readonly CandidateValidation[] {
+  return selectActiveCandidates(state).map((candidate) => ({
+    candidateId: candidate.id,
+    result: validateWordInput(candidate.editedText),
+  }));
+}
+
+/** Includes excluded candidates for diagnostics and data integrity checks. */
+export function selectAllCandidateValidations(
+  state: OcrReviewState,
+): readonly CandidateValidation[] {
   return state.candidates.map((candidate) => ({
     candidateId: candidate.id,
     result: validateWordInput(candidate.editedText),
   }));
 }
 
-export function selectDuplicateGroups(state: OcrReviewState): readonly DuplicateGroup[] {
+function groupDuplicateCandidates(
+  candidates: readonly OcrReviewCandidate[],
+): readonly DuplicateGroup[] {
   const candidateIdsByKey = new Map<string, string[]>();
 
-  for (const candidate of selectActiveCandidates(state)) {
+  for (const candidate of candidates) {
     const comparisonKey = toWordComparisonKey(candidate.editedText);
     if (comparisonKey.length === 0) continue;
 
@@ -60,10 +72,24 @@ export function selectDuplicateGroups(state: OcrReviewState): readonly Duplicate
     .map(([comparisonKey, candidateIds]) => ({ comparisonKey, candidateIds }));
 }
 
+/** Returns every duplicate group, including duplicates the user chose to keep. */
+export function selectDuplicateGroups(state: OcrReviewState): readonly DuplicateGroup[] {
+  return groupDuplicateCandidates(selectActiveCandidates(state));
+}
+
+/** Returns only duplicate groups that still require a user decision. */
+export function selectUnresolvedDuplicateGroups(
+  state: OcrReviewState,
+): readonly DuplicateGroup[] {
+  return groupDuplicateCandidates(
+    selectActiveCandidates(state).filter((candidate) => !candidate.allowDuplicate),
+  );
+}
+
 export function selectLowConfidenceCandidateIds(
   state: OcrReviewState,
 ): readonly string[] {
-  return state.candidates
+  return selectActiveCandidates(state)
     .filter(
       (candidate) =>
         candidate.confidence !== null && candidate.confidence < LOW_CONFIDENCE_THRESHOLD,
@@ -78,4 +104,3 @@ export function selectCanCompleteReview(state: OcrReviewState): boolean {
     selectedCandidates.every((candidate) => validateWordInput(candidate.editedText).isValid)
   );
 }
-
