@@ -72,6 +72,17 @@ function groupDuplicateCandidates(
     .map(([comparisonKey, candidateIds]) => ({ comparisonKey, candidateIds }));
 }
 
+function unresolvedDuplicateGroups(
+  candidates: readonly OcrReviewCandidate[],
+): readonly DuplicateGroup[] {
+  const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  return groupDuplicateCandidates(candidates).filter((group) =>
+    group.candidateIds.some(
+      (candidateId) => candidateById.get(candidateId)?.allowDuplicate !== true,
+    ),
+  );
+}
+
 /** Returns every duplicate group, including duplicates the user chose to keep. */
 export function selectDuplicateGroups(state: OcrReviewState): readonly DuplicateGroup[] {
   return groupDuplicateCandidates(selectActiveCandidates(state));
@@ -81,9 +92,14 @@ export function selectDuplicateGroups(state: OcrReviewState): readonly Duplicate
 export function selectUnresolvedDuplicateGroups(
   state: OcrReviewState,
 ): readonly DuplicateGroup[] {
-  return groupDuplicateCandidates(
-    selectActiveCandidates(state).filter((candidate) => !candidate.allowDuplicate),
-  );
+  return unresolvedDuplicateGroups(selectActiveCandidates(state));
+}
+
+/** Returns unresolved duplicates only when multiple selected candidates would be saved. */
+export function selectSelectedUnresolvedDuplicateGroups(
+  state: OcrReviewState,
+): readonly DuplicateGroup[] {
+  return unresolvedDuplicateGroups(selectSelectedCandidates(state));
 }
 
 export function selectLowConfidenceCandidateIds(
